@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圖片轉 SVG 向量工具 (JPG/PNG to SVG)</title>
+    <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: #f0f7ff;
+        }
+
+        /* 隱藏實際的 input file */
+        #fileInput {
+            display: none;
+        }
+
+        .upload-label {
+            font-size: 1.1rem;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            display: none; /* 預設隱藏 */
+        }
+
+        .image-box {
+            flex: 1;
+            min-width: 300px;
+            background: #fafafa;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+
+        .image-box h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: #555;
+        }
+
+        .image-content {
+            width: 100%;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee), 
+                              linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        img, svg {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: none; /* 預設隱藏 */
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background-color: #357abd;
+        }
+
+        .loading {
+            color: var(--primary-color);
+            font-weight: bold;
+            display: none;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>JPG/PNG 轉 SVG 轉換器</h1>
+        <p>請上傳圖片，系統將自動進行向量描摹 (Vectorization)</p>
+
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept="image/png, image/jpeg, image/jpg">
+            <div class="upload-label">
+                📁 點擊此處上傳圖片 (或是直接拖曳圖片到這裡)
+            </div>
+        </div>
+
+        <div id="loadingMsg" class="loading">正在轉換中，請稍候...</div>
+
+        <div class="preview-container" id="previewArea">
+            <div class="image-box">
+                <h3>原始圖片 (Raster)</h3>
+                <div class="image-content">
+                    <img id="originalImg" src="" alt="Original">
+                </div>
+            </div>
+
+            <div class="image-box">
+                <h3>轉換結果 (SVG Vector)</h3>
+                <div class="image-content" id="svgContainer">
+                    </div>
+            </div>
+        </div>
+
+        <div class="controls" id="controlsArea">
+            <a id="downloadBtn" class="btn" href="#" download="converted.svg">⬇️ 下載 SVG 檔案</a>
+        </div>
+    </div>
+
+    <script>
+        // 設定 ImageTracer 的參數
+        // 您可以根據需要調整這些數值來改變精細度
+        const options = {
+            ltres: 1,           // 線段公差 (越小越精細)
+            qtres: 1,           // 曲線公差 (越小越精細)
+            pathomit: 8,        // 忽略過小的路徑 (去除雜訊)
+            colorsampling: 2,   // 顏色採樣模式 (0:disabled, 1:random, 2:deterministic)
+            numberofcolors: 16, // 限制顏色數量 (這會影響 SVG 的大小和風格)
+            mincolorratio: 0,
+            colorquantcycles: 3,
+            scale: 1,           // 縮放比例
+            simplifymode: 1,
+            lcpr: 0,
+            blurradius: 0,      // 模糊半徑 (設為 0 不模糊，適合銳利邊緣)
+            blurdelta: 20
+        };
+
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('previewArea');
+        const controlsArea = document.getElementById('controlsArea');
+        const originalImg = document.getElementById('originalImg');
+        const svgContainer = document.getElementById('svgContainer');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const loadingMsg = document.getElementById('loadingMsg');
+
+        // 監聽檔案上傳
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // 顯示讀取中
+            loadingMsg.style.display = 'block';
+            previewArea.style.display = 'none';
+            controlsArea.style.display = 'none';
+
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const imgDataUrl = event.target.result;
+
+                // 1. 顯示原始圖片
+                originalImg.src = imgDataUrl;
+
+                // 2. 執行轉換 (因為運算較重，使用 setTimeout 讓 UI 有機會渲染 "讀取中")
+                setTimeout(() => {
+                    ImageTracer.imageToSVG(imgDataUrl, function(svgstr) {
+                        // 處理轉換完成後的 SVG 字串
+                        displaySVG(svgstr);
+                    }, options);
+                }, 100);
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        function displaySVG(svgString) {
+            // 清空舊的 SVG
+            svgContainer.innerHTML = svgString;
+            
+            // 調整 SVG 的寬高以適應容器 (保持響應式)
+            const svgElement = svgContainer.querySelector('svg');
+            if(svgElement) {
+                svgElement.setAttribute('width', '100%');
+                svgElement.setAttribute('height', '100%');
+                svgElement.removeAttribute('style'); // 移除可能導致跑版的內聯樣式
+            }
+
+            // 準備下載連結
+            const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            downloadBtn.href = url;
+
+            // 顯示介面
+            loadingMsg.style.display = 'none';
+            previewArea.style.display = 'flex';
+            controlsArea.style.display = 'block';
+        }
+
+        // 支援拖曳上傳
+        const uploadArea = document.querySelector('.upload-area');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            // 手動觸發 change 事件
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+        }
+    </script>
+</body>
+</html>
