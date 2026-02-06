@@ -501,8 +501,6 @@
                     ctx.filter = 'none'; 
 
                     // 2. Apply Posterization (Pixel manipulation - needs direct access)
-                    // If levels < 256, we must manipulate pixel data.
-                    // IMPORTANT: This makes preview real-time but might be slow on huge images.
                     if (state.adjust.posterize < 256) {
                         const imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
                         const d = imageData.data;
@@ -613,7 +611,7 @@
                         <div>
                             <label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('colors')}</label>
                             <div class="flex gap-2 flex-wrap">
-                                ${levelBtn('2 (B&W)', 2)} ${levelBtn('4', 4)} ${levelBtn('8', 8)} ${levelBtn('16', 16)} ${levelBtn(t('trueColor'), 256)}
+                                ${levelBtn('2 (B&W)', 2)} ${levelBtn('4', 4)} ${levelBtn('8', 8)} ${levelBtn('16', 16)} ${levelBtn('32', 32)} ${levelBtn('256', 256)} ${levelBtn(t('trueColor'), 256)}
                             </div>
                         </div>
                         <div class="flex gap-2 mt-4">
