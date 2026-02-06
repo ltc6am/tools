@@ -1,414 +1,875 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>圖片轉 SVG</title>
-    <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.min.js"></script>
+    <title>PixelCraft - Professional Creative Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- GifShot for Video to GIF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
+
     <style>
-        :root {
-            --primary: #009688;
-            --secondary: #ff5722;
-            --bg: #f4f4f4;
-            --card: #ffffff;
-            --selected-stroke: #2196F3;
-        }
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: var(--bg);
-            padding: 20px;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #333;
-        }
-        .container {
-            background: var(--card);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            max-width: 900px;
-            width: 100%;
-            text-align: center;
-        }
-        h1 { margin-top: 0; color: #333; }
-        .badge {
-            background: var(--secondary);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            vertical-align: middle;
-        }
+        /* Custom Styles */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        /* 設定區域 */
-        .settings-group {
-            background: #eee;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        .settings-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        label { cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500;}
-        select { padding: 5px 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 1rem;}
-
-        /* 上傳區 */
-        .upload-box {
-            border: 3px dashed #ccc;
-            padding: 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-            margin-bottom: 20px;
-            background: #fafafa;
-        }
-        .upload-box:hover { border-color: var(--primary); background: #e0f2f1; }
-        
-        /* 預覽區 */
-        .preview-area {
-            display: none;
-            flex-direction: column;
-            gap: 20px;
-            justify-content: center;
-        }
-        .preview-card {
-            border: 1px solid #ddd;
-            padding: 10px;
-            border-radius: 8px;
-            background: #fff;
-            position: relative;
-        }
-        
-        .instructions {
-            background: #e3f2fd;
-            color: #0d47a1;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .canvas-container {
-            height: 500px; /* 加大預覽區 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            /* 棋盤格背景，方便看透明度 */
-            background-image: 
-                linear-gradient(45deg, #e0e0e0 25%, transparent 25%), 
-                linear-gradient(-45deg, #e0e0e0 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #e0e0e0 75%), 
-                linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+        .checkered-bg {
+            background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+                              linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
+                              linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
             background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px; 
-            overflow: hidden;
-            border: 1px solid #ccc;
-            cursor: crosshair; /* 提示可以點擊 */
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #7c3aed; /* violet-600 */
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translate(-50%, -10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        .animate-fade-in-down {
+            animation: fadeInDown 0.3s ease-out forwards;
         }
         
-        .canvas-container svg {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto; 
-            height: auto;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        /* Handles */
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #7c3aed;
+            border: 2px solid white;
+            border-radius: 50%;
+            z-index: 20;
+            transform: translate(-50%, -50%);
         }
-
-        /* 互動樣式 */
-        /* 正常的 path (保留) */
-        path.keep-path {
-            cursor: pointer;
-            transition: all 0.1s ease;
-        }
-        path.keep-path:hover {
-            opacity: 0.8;
-            stroke: var(--selected-stroke);
-            stroke-width: 2px;
-        }
-
-        /* 被移除的 path (半透明) */
-        path.remove-path {
-            fill: #ff0000 !important; /* 紅色提示 */
-            fill-opacity: 0.1 !important;
-            stroke: #ffcccc !important;
-            stroke-width: 1px !important;
-            cursor: pointer;
-        }
-        path.remove-path:hover {
-            fill-opacity: 0.4 !important; /* hover時稍微清楚一點 */
-        }
-
-        .btn {
-            background: var(--primary);
-            color: white;
-            text-decoration: none;
-            padding: 15px 30px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            display: inline-block;
-            margin-top: 20px;
-            border: none;
-            cursor: pointer;
-        }
-        .btn:hover { filter: brightness(1.1); }
-        .loading { display: none; margin: 10px; color: var(--primary); font-weight: bold; }
         
-        .status-bar {
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: #666;
-        }
+        /* Font Sizes */
+        .text-size-small { font-size: 14px; }
+        .text-size-normal { font-size: 16px; }
+        .text-size-large { font-size: 18px; }
+
+        /* Cursors */
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing; }
     </style>
 </head>
-<body>
+<body class="bg-slate-100 h-screen flex flex-col overflow-hidden text-size-normal" id="app-body">
 
-<div class="container">
-    <h1>SVG 轉換器 <span class="badge">互動選取版</span></h1>
-    <p>如果主體被誤刪，請直接點擊該區域將其復原。</p>
-
-    <div class="settings-group">
-        <div class="settings-row">
-            <strong>1. 轉換模式：</strong>
-            <label>
-                <input type="radio" name="mode" value="bw" checked> 
-                黑白輪廓 (推薦)
-            </label>
-            <label>
-                <input type="radio" name="mode" value="color"> 
-                彩色
-            </label>
+    <!-- LANDING PAGE (Initial State) -->
+    <div id="landing-page" class="flex-1 flex flex-col items-center justify-center p-4">
+        <div class="flex justify-end w-full absolute top-0 p-4 gap-2">
+            <button onclick="toggleLang()" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                <i data-lucide="globe" class="w-4 h-4"></i> <span id="lang-btn-text">English</span>
+            </button>
         </div>
 
-        <div class="settings-row">
-            <strong>2. 預設過濾 (Auto Filter)：</strong>
-            <select id="bgRemoveMode">
-                <option value="white" selected>自動隱藏白色/亮色</option>
-                <option value="black">自動隱藏黑色/深色</option>
-                <option value="none">顯示全部 (全部手動)</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="upload-box" onclick="document.getElementById('inp').click()">
-        <input type="file" id="inp" accept="image/*" style="display:none">
-        <div>📂 點擊這裡上傳圖片</div>
-        <div style="margin-top:5px; font-size:0.9rem; color:#888;">上傳後請在下方預覽圖進行手動調整</div>
-    </div>
-
-    <div id="loading" class="loading">正在運算路徑，請稍候...</div>
-
-    <div class="preview-area" id="result">
-        
-        <div class="instructions">
-            <span>👆 <strong>互動模式：</strong> 點擊圖中的色塊來切換 [保留] 或 [刪除]。</span>
-            <span style="font-size:0.8em; color:#666;">(紅色半透明 = 不會下載)</span>
-        </div>
-
-        <div class="preview-card">
-            <div class="canvas-container" id="svg-wrap"></div>
-        </div>
-        
-        <div class="status-bar">
-            已選取路徑數: <span id="path-count">0</span>
-        </div>
-
-        <div>
-            <a id="dl-btn" class="btn" href="#">✅ 下載 SVG (只下載可見部分)</a>
-        </div>
-    </div>
-</div>
-
-<script>
-    // --- 參數設定 ---
-    const bwOptions = {
-        colorsampling: 2,
-        numberofcolors: 2, 
-        mincolorratio: 0,
-        colorquantcycles: 3,
-        ltres: 1,
-        qtres: 1,
-        pathomit: 8,     
-        blurradius: 5,    
-        blurdelta: 20,
-        stroke: false,    
-        scale: 1,
-        lineart: false
-    };
-
-    const colorOptions = {
-        colorsampling: 2,
-        numberofcolors: 16,
-        ltres: 1, 
-        qtres: 1,
-        pathomit: 8,
-        scale: 1
-    };
-
-    function getLuminance(colorStr) {
-        if (!colorStr) return 255;
-        const matches = colorStr.match(/\d+/g);
-        if (matches && matches.length >= 3) {
-            const r = parseInt(matches[0]);
-            const g = parseInt(matches[1]);
-            const b = parseInt(matches[2]);
-            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        }
-        return 128;
-    }
-
-    const inp = document.getElementById('inp');
-    const result = document.getElementById('result');
-    const svgWrap = document.getElementById('svg-wrap');
-    const dlBtn = document.getElementById('dl-btn');
-    const loading = document.getElementById('loading');
-    const pathCountSpan = document.getElementById('path-count');
-    
-    let currentSvgEl = null; // 儲存當前的 SVG DOM
-    let originalFilename = "image";
-
-    inp.addEventListener('change', function(e) {
-        if(!e.target.files[0]) return;
-        
-        loading.style.display = 'block';
-        result.style.display = 'none';
-
-        const file = e.target.files[0];
-        originalFilename = file.name.split('.')[0];
-        const reader = new FileReader();
-
-        const mode = document.querySelector('input[name="mode"]:checked').value;
-        const bgMode = document.getElementById('bgRemoveMode').value;
-        const currentOptions = mode === 'bw' ? bwOptions : colorOptions;
-
-        reader.onload = function(evt) {
-            const imgData = evt.target.result;
+        <div class="max-w-xl w-full text-center space-y-8 -mt-16">
+            <div class="space-y-2">
+                <div class="flex justify-center mb-4">
+                    <div class="w-20 h-20 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-200">
+                        <i data-lucide="sparkles" class="w-10 h-10"></i>
+                    </div>
+                </div>
+                <h1 class="text-4xl font-bold text-slate-900 tracking-tight" id="landing-title">PixelCraft</h1>
+                <p class="text-slate-500 text-lg" id="landing-subtitle">Professional creative studio for your browser.</p>
+            </div>
             
-            setTimeout(() => {
-                ImageTracer.imageToSVG(imgData, function(svgstr) {
-                    processSVG(svgstr, mode, bgMode);
-                }, currentOptions);
-            }, 50);
+            <div class="relative group cursor-pointer" onclick="document.getElementById('file-upload').click()">
+                <div class="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-200"></div>
+                <div class="relative bg-white rounded-xl p-12 border-2 border-dashed border-slate-300 hover:border-violet-500 transition-colors flex flex-col items-center justify-center space-y-4 shadow-sm">
+                    <input type="file" id="file-upload" class="hidden" accept="image/*,video/*,.svg" onchange="handleUpload(event)">
+                    <div class="w-16 h-16 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center">
+                        <i data-lucide="upload" class="w-8 h-8"></i>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-lg font-medium text-slate-700" id="landing-upload-title">Click or drag image/video</p>
+                        <p class="text-sm text-slate-400 mt-1" id="landing-upload-desc">Supports PNG, JPG, WEBP, SVG, MP4</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN EDITOR (Hidden by default) -->
+    <div id="editor-page" class="h-full flex flex-col hidden">
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-20 shadow-sm">
+            <div class="flex items-center gap-2 font-bold text-xl text-slate-800 cursor-pointer" onclick="resetApp()" title="Back to Home">
+                <div class="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-lg flex items-center justify-center text-white shadow-sm">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                </div>
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-violet-700 to-indigo-700 font-extrabold tracking-tight" id="header-title">PixelCraft</span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button onclick="toggleFontSize()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 text-[0.75em] font-medium text-slate-600 hover:bg-slate-100 transition-colors" title="Toggle Font Size">
+                    <i data-lucide="type" class="w-3 h-3"></i> <span class="capitalize" id="font-size-label">Normal</span>
+                </button>
+                <button onclick="toggleLang()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 text-[0.75em] font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                    <i data-lucide="globe" class="w-3 h-3"></i> <span id="header-lang-text">EN/中</span>
+                </button>
+                <div class="h-6 w-px bg-slate-200 mx-2"></div>
+                <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+                    <button onclick="adjustZoom(-0.1)" class="p-1.5 hover:bg-white rounded-md text-slate-600 transition-colors"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+                    <span id="zoom-level" class="text-[0.75em] font-medium w-12 text-center text-slate-600">100%</span>
+                    <button onclick="adjustZoom(0.1)" class="p-1.5 hover:bg-white rounded-md text-slate-600 transition-colors"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+                </div>
+                <div class="h-6 w-px bg-slate-200 mx-2"></div>
+                <div id="history-controls" class="flex gap-2">
+                    <button onclick="handleUndo()" id="btn-undo" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[0.875em] font-medium text-slate-300 cursor-not-allowed" title="Ctrl+Z"><i data-lucide="undo" class="w-4 h-4"></i> <span data-t="undo">Undo</span></button>
+                    <button onclick="handleRedo()" id="btn-redo" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[0.875em] font-medium text-slate-300 cursor-not-allowed" title="Ctrl+Y"><i data-lucide="redo" class="w-4 h-4"></i> <span data-t="redo">Redo</span></button>
+                </div>
+                <button onclick="resetApp()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[0.875em] font-medium text-red-600 hover:bg-red-50 transition-colors">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> <span class="hidden sm:inline" data-t="reset">Reset</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden">
+            <!-- LEFT TOOLBAR -->
+            <div id="toolbar" class="w-20 bg-white border-r border-slate-200 flex flex-col items-center py-6 gap-4 shrink-0 z-10 shadow-[2px_0_10px_rgba(0,0,0,0.05)] overflow-y-auto">
+                <!-- Tools injected by JS -->
+            </div>
+
+            <!-- CENTER CANVAS -->
+            <div id="canvas-container" 
+                 class="flex-1 relative bg-slate-50/50 overflow-hidden flex items-center justify-center p-0 checkered-bg select-none" 
+                 onwheel="handleScrollZoom(event)"
+                 onmousedown="startPan(event)">
+                
+                <!-- Notification -->
+                <div id="notification" class="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white px-4 py-2 rounded-full text-[0.875em] font-medium shadow-lg hidden transition-opacity duration-300"></div>
+
+                <div id="canvas-wrapper" class="relative shadow-2xl origin-center">
+                    <!-- Removed bg-white from canvas to allow transparency to show -->
+                    <canvas id="main-canvas" class="block cursor-default"></canvas>
+                    <video id="main-video" class="block bg-black hidden" controls></video>
+                    
+                    <!-- Overlays Container -->
+                    <div id="overlay-layer" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+            </div>
+
+            <!-- RIGHT SETTINGS PANEL -->
+            <div id="settings-panel" class="w-80 bg-white border-l border-slate-200 p-6 flex flex-col shrink-0 animate-slide-in-right z-10 shadow-xl overflow-y-auto hidden">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Input for Overlay Upload -->
+    <input type="file" id="overlay-upload" class="hidden" accept="image/*" onchange="handleOverlayFile(event)">
+
+    <script>
+        /**
+         * STATE & CONFIG
+         */
+        const defaultAdjust = { brightness: 100, contrast: 100, saturation: 100, opacity: 100, blur: 0, posterize: 256 };
+        
+        const state = {
+            lang: 'en',
+            fontSize: 'normal',
+            imageSrc: null,
+            videoSrc: null,
+            imgObj: null, // Cached Image Object
+            history: [],
+            historyIndex: -1,
+            activeTool: null,
+            zoom: 1,
+            pan: { x: 0, y: 0 },
+            originalDims: { w: 0, h: 0 },
+            currentDims: { w: 0, h: 0 },
+            
+            // Tool Configs
+            crop: { rect: null, lockAspect: false },
+            resize: { width: 0, height: 0, maintainAspect: true, scale: 100 },
+            bgRemove: { tolerance: 20 },
+            text: { 
+                text: 'Hello World', x: 0.5, y: 0.5, size: 50, color: '#ffffff',
+                font: 'sans-serif', stroke: '#000000', strokeWidth: 0, shadow: '#000000', shadowBlur: 0
+            },
+            overlay: { src: null, img: null, x: 0.5, y: 0.5, scale: 0.3 },
+            adjust: { ...defaultAdjust },
+            
+            gif: { duration: 2, generating: false },
+            export: { name: 'edited-image', format: 'image/jpeg', quality: 0.9 },
+            fileSizePreview: null
         };
-        reader.readAsDataURL(file);
-    });
 
-    function processSVG(svgstr, mode, bgMode) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(svgstr, "image/svg+xml");
-        currentSvgEl = doc.documentElement;
+        const TRANSLATIONS = {
+            en: {
+                appTitle: "PixelCraft", subtitle: "Professional creative studio for your browser.",
+                uploadTitle: "Click or drag image/video", uploadDesc: "Supports PNG, JPG, WEBP, SVG, MP4",
+                crop: "Crop", resize: "Resize", removeBg: "Remove BG", text: "Text", overlay: "Overlay", adjust: "Adjust", invert: "Invert", export: "Export", convert: "Convert",
+                undo: "Undo", redo: "Redo", reset: "Reset", resetAdjust: "Reset Adjustments",
+                cropImage: "Crop Image", dragHandles: "Drag handles to crop.", free: "Free", original: "Original", applyCrop: "Apply Crop", lockAspect: "Lock Ratio", fitMax: "Fit Max",
+                resizeImage: "Resize Image", percentage: "Percentage", width: "Width", height: "Height", applyResize: "Apply Resize", estSize: "Est. Size",
+                removeBackground: "Remove Background", magicWand: "Magic Wand", magicWandDesc: "Click image to remove color.", autoRemove: "Auto Remove", outlineOnly: "Outline", tolerance: "Tolerance", done: "Done",
+                addText: "Add Text", textInput: "Text Input", textColor: "Fill Color", textSize: "Size", font: "Font", stroke: "Outline", strokeWidth: "Width", shadow: "Shadow", shadowBlur: "Blur", applyText: "Apply Text",
+                addOverlay: "Add Overlay", uploadOverlay: "Upload Image", overlaySize: "Size", applyOverlay: "Apply Overlay", changeImage: "Change Image",
+                adjustImage: "Adjustments", brightness: "Brightness", contrast: "Contrast", saturation: "Saturation", opacity: "Opacity", blur: "Blur", colors: "Colors (Levels)", quantize: "Reduce Colors",
+                videoToGif: "Video to GIF", gifDuration: "Duration (s)", createGif: "Create GIF", generating: "Generating...", videoFrame: "Video Frame", captureFrame: "Capture Frame",
+                exportImage: "Export / Convert", fileName: "File Name", format: "Format", quality: "Quality", downloadImage: "Download File",
+                imageCropped: "Image cropped!", imageResized: "Resized!", bgRemoved: "Background removed!", textAdded: "Text added!", overlayAdded: "Overlay added!", imageDownloaded: "Downloaded!", filterApplied: "Filter applied!",
+                alignment: "Alignment", resetDone: "Reset Complete", trueColor: "True Color"
+            },
+            zh: {
+                appTitle: "像素工坊", subtitle: "為您的瀏覽器打造的專業創意工作室。",
+                uploadTitle: "點擊或拖曳上傳圖片/影片", uploadDesc: "支援 PNG, JPG, WEBP, SVG, MP4",
+                crop: "裁剪", resize: "調整大小", removeBg: "移除背景", text: "文字", overlay: "貼圖", adjust: "調整", invert: "反白", export: "導出", convert: "轉換",
+                undo: "復原", redo: "重做", reset: "重置", resetAdjust: "重置調整",
+                cropImage: "裁剪圖片", dragHandles: "拖曳控制點以調整裁剪區域。", free: "自由", original: "原始比例", applyCrop: "應用裁剪", lockAspect: "鎖定比例", fitMax: "最大範圍",
+                resizeImage: "調整圖片大小", percentage: "百分比", width: "寬度", height: "高度", applyResize: "應用調整", estSize: "預估大小",
+                removeBackground: "移除背景", magicWand: "魔棒工具", magicWandDesc: "點擊圖片移除顏色。", autoRemove: "自動移除", outlineOnly: "輪廓", tolerance: "容差", done: "完成",
+                addText: "添加文字", textInput: "輸入文字", textColor: "填充顏色", textSize: "大小", font: "字體", stroke: "描邊", strokeWidth: "寬度", shadow: "陰影", shadowBlur: "模糊", applyText: "應用文字",
+                addOverlay: "添加圖片", uploadOverlay: "上傳圖片", overlaySize: "大小", applyOverlay: "應用貼圖", changeImage: "更換圖片",
+                adjustImage: "圖片調整", brightness: "亮度", contrast: "對比度", saturation: "飽和度", opacity: "不透明度", blur: "模糊", colors: "顏色數量", quantize: "減少顏色",
+                videoToGif: "影片轉 GIF", gifDuration: "時長 (秒)", createGif: "製作 GIF", generating: "生成中...", videoFrame: "影片畫格", captureFrame: "擷取畫格",
+                exportImage: "導出 / 轉換", fileName: "檔案名稱", format: "格式",品質: "品質", downloadImage: "下載檔案",
+                imageCropped: "圖片已裁剪！", imageResized: "已調整大小！", bgRemoved: "背景已移除！", textAdded: "文字已添加！", overlayAdded: "貼圖已添加！", imageDownloaded: "已下載！", filterApplied: "濾鏡已應用！",
+                alignment: "對齊", resetDone: "重置完成", trueColor: "原色"
+            }
+        };
 
-        // 1. 修復屬性
-        const w = currentSvgEl.getAttribute('width');
-        const h = currentSvgEl.getAttribute('height');
-        if (!currentSvgEl.getAttribute('viewBox') && w && h) {
-            currentSvgEl.setAttribute('viewBox', `0 0 ${parseFloat(w)} ${parseFloat(h)}`);
+        const UNITS = { px: { label: 'px', factor: 1 }, in: { label: 'in', factor: 96 }, cm: { label: 'cm', factor: 37.795 }, mm: { label: 'mm', factor: 3.7795 } };
+        let activeUnit = 'px';
+
+        /**
+         * INITIALIZATION
+         */
+        window.onload = () => {
+            lucide.createIcons();
+            setupGlobalEvents();
+            updateUI();
+        };
+
+        function setupGlobalEvents() {
+            window.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); handleUndo(); }
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); handleRedo(); }
+                if (e.code === 'Space' && !e.repeat && (state.imageSrc || state.videoSrc)) {
+                    document.getElementById('canvas-container').classList.add('cursor-grab');
+                }
+            });
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') {
+                    document.getElementById('canvas-container').classList.remove('cursor-grab', 'cursor-grabbing');
+                }
+            });
         }
-        if (!currentSvgEl.getAttribute('xmlns')) {
-            currentSvgEl.setAttribute('xmlns', "http://www.w3.org/2000/svg");
-        }
 
-        // 2. 初始化路徑狀態 (Auto Filter)
-        const paths = currentSvgEl.querySelectorAll('path');
-        let activeCount = 0;
+        function t(key) { return TRANSLATIONS[state.lang][key] || key; }
 
-        paths.forEach(p => {
-            const fill = p.getAttribute('fill');
-            const lum = getLuminance(fill);
-            let shouldHide = false;
+        function updateUI() {
+            document.querySelectorAll('[data-t]').forEach(el => {
+                el.innerText = t(el.getAttribute('data-t'));
+            });
+            const hasMedia = state.imageSrc || state.videoSrc;
+            document.getElementById('landing-page').classList.toggle('hidden', hasMedia);
+            document.getElementById('editor-page').classList.toggle('hidden', !hasMedia);
 
-            // 根據預設設定判斷是否隱藏
-            if (bgMode === 'white' && lum > 200) shouldHide = true;
-            if (bgMode === 'black' && lum < 50) shouldHide = true;
-            if (fill === 'transparent' || fill === 'none') shouldHide = true;
-
-            if (shouldHide) {
-                p.classList.add('remove-path');
+            if (hasMedia) {
+                renderHeader(); renderToolbar(); renderCanvasArea(); renderSettingsPanel();
             } else {
-                p.classList.add('keep-path');
-                // 黑白模式強制轉黑
-                if (mode === 'bw') p.setAttribute('fill', '#000000');
-                activeCount++;
+                document.getElementById('landing-title').innerText = t('appTitle');
+                document.getElementById('landing-subtitle').innerText = t('subtitle');
+                document.getElementById('landing-upload-title').innerText = t('uploadTitle');
+                document.getElementById('landing-upload-desc').innerText = t('uploadDesc');
+                document.getElementById('lang-btn-text').innerText = state.lang === 'en' ? 'English' : '繁體中文';
+                
+                // Clear inputs on landing
+                const fileInput = document.getElementById('file-upload');
+                if(fileInput) fileInput.value = '';
+            }
+            lucide.createIcons();
+        }
+
+        /**
+         * CORE ACTIONS
+         */
+        function handleUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            state.export.name = file.name.split('.')[0];
+            state.pan = { x: 0, y: 0 };
+            
+            // Reset Adjustments on New Upload
+            state.adjust = { ...defaultAdjust };
+
+            if (file.type.startsWith('video/')) {
+                state.videoSrc = url; state.imageSrc = null; state.history = []; state.historyIndex = -1; state.activeTool = null;
+                updateUI(); 
+                const video = document.getElementById('main-video');
+                video.onloadedmetadata = () => {
+                    state.currentDims = { w: video.videoWidth, h: video.videoHeight };
+                    fitImageToScreen(); renderHeader();
+                };
+            } else {
+                const img = new Image();
+                img.onload = () => {
+                    state.imageSrc = url; state.videoSrc = null; state.imgObj = img;
+                    state.currentDims = { w: img.width, h: img.height };
+                    state.resize.width = img.width; state.resize.height = img.height;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    const dataUrl = canvas.toDataURL();
+                    state.history = [dataUrl]; state.historyIndex = 0; state.imageSrc = dataUrl; 
+                    
+                    const newImg = new Image();
+                    newImg.onload = () => {
+                        state.imgObj = newImg;
+                        updateUI(); 
+                        setTimeout(fitImageToScreen, 50);
+                    };
+                    newImg.src = dataUrl;
+                };
+                img.src = url;
+            }
+        }
+
+        function addToHistory(newSrc) {
+            state.history = state.history.slice(0, state.historyIndex + 1);
+            state.history.push(newSrc); state.historyIndex++; state.imageSrc = newSrc; state.videoSrc = null; 
+            const img = new Image();
+            img.onload = () => {
+                state.imgObj = img;
+                updateUI();
+            };
+            img.src = newSrc;
+        }
+
+        function handleUndo() {
+            if (state.historyIndex > 0) { 
+                state.historyIndex--; 
+                state.imageSrc = state.history[state.historyIndex];
+                const img = new Image();
+                img.onload = () => { state.imgObj = img; resetTools(); updateUI(); };
+                img.src = state.imageSrc;
+            }
+        }
+        function handleRedo() {
+            if (state.historyIndex < state.history.length - 1) { 
+                state.historyIndex++; 
+                state.imageSrc = state.history[state.historyIndex]; 
+                const img = new Image();
+                img.onload = () => { state.imgObj = img; resetTools(); updateUI(); };
+                img.src = state.imageSrc;
+            }
+        }
+        function resetApp() { 
+            state.imageSrc = null; state.videoSrc = null; state.history = []; state.activeTool = null; state.pan = { x: 0, y: 0 }; state.imgObj = null; 
+            // Reset Adjustments
+            state.adjust = { ...defaultAdjust };
+            
+            // Clear Inputs
+            document.getElementById('file-upload').value = '';
+            document.getElementById('overlay-upload').value = '';
+            
+            updateUI(); 
+        }
+        function resetTools() { 
+            state.activeTool = null; state.crop.rect = null; state.overlay.src = null; 
+            // NOTE: We don't reset Adjustments here to allow user to tweak then click Done. 
+            // Adjustments are committed when "Done" is clicked or reset via Reset Button.
+            updateUI(); 
+        }
+        function resetAdjustments() {
+            state.adjust = { ...defaultAdjust };
+            renderCanvasArea();
+            renderSettingsPanel();
+        }
+        function setActiveTool(tool) {
+            state.activeTool = tool;
+            if (tool === 'crop') { state.crop.rect = { x: 0.1, y: 0.1, w: 0.8, h: 0.8 }; state.crop.lockAspect = false; }
+            if (tool === 'resize') { state.resize = { width: state.currentDims.w, height: state.currentDims.h, maintainAspect: true, scale: 100 }; }
+            updateUI();
+        }
+
+        /**
+         * RENDERING UI PARTS
+         */
+        function renderHeader() {
+            document.getElementById('header-title').innerText = t('appTitle');
+            document.getElementById('header-lang-text').innerText = state.lang === 'en' ? 'EN/中' : '中/EN';
+            document.getElementById('font-size-label').innerText = state.fontSize;
+            document.getElementById('zoom-level').innerText = Math.round(state.zoom * 100) + '%';
+            
+            const undoBtn = document.getElementById('btn-undo'); const redoBtn = document.getElementById('btn-redo');
+            if (state.videoSrc) { document.getElementById('history-controls').classList.add('hidden'); } 
+            else {
+                document.getElementById('history-controls').classList.remove('hidden');
+                undoBtn.disabled = state.historyIndex <= 0;
+                undoBtn.className = `flex items-center gap-2 px-3 py-1.5 rounded-lg text-[0.875em] font-medium transition-colors ${state.historyIndex > 0 ? 'hover:bg-slate-100 text-slate-700' : 'text-slate-300 cursor-not-allowed'}`;
+                redoBtn.disabled = state.historyIndex >= state.history.length - 1;
+                redoBtn.className = `flex items-center gap-2 px-3 py-1.5 rounded-lg text-[0.875em] font-medium transition-colors ${state.historyIndex < state.history.length - 1 ? 'hover:bg-slate-100 text-slate-700' : 'text-slate-300 cursor-not-allowed'}`;
+            }
+        }
+
+        function renderToolbar() {
+            const toolbar = document.getElementById('toolbar');
+            let html = '';
+            const btnClass = (active) => `w-14 h-14 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200 ${active ? 'bg-violet-600 text-white shadow-lg shadow-violet-200 scale-105' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`;
+            
+            if (state.videoSrc) {
+                html += `<button class="${btnClass(true)}" onclick=""><i data-lucide="file-video" class="w-6 h-6"></i><span class="text-[0.65em] font-medium">Video</span></button>`;
+                html += `<button class="${btnClass(state.activeTool === 'gif')}" onclick="setActiveTool('gif')"><i data-lucide="refresh-cw" class="w-6 h-6"></i><span class="text-[0.65em] font-medium">GIF</span></button>`;
+            } else {
+                const tools = [
+                    { id: 'crop', icon: 'crop', label: 'crop' },
+                    { id: 'resize', icon: 'maximize-2', label: 'resize' },
+                    { id: 'adjust', icon: 'sliders', label: 'adjust' }, 
+                    { id: 'bgremove', icon: 'eraser', label: 'removeBg' },
+                    { sep: true },
+                    { id: 'text', icon: 'type', label: 'text' },
+                    { id: 'overlay', icon: 'image', label: 'overlay' },
+                    { id: 'invert', icon: 'contrast', label: 'invert' }
+                ];
+                tools.forEach(tool => {
+                    if (tool.sep) { html += `<div class="w-8 h-px bg-slate-200 my-1"></div>`; } else {
+                        const clickAction = tool.id === 'invert' ? 'handleInvert()' : `setActiveTool('${tool.id}')`;
+                        html += `<button class="${btnClass(state.activeTool === tool.id)}" onclick="${clickAction}"><i data-lucide="${tool.icon}" class="w-6 h-6"></i><span class="text-[0.65em] font-medium">${t(tool.label)}</span></button>`;
+                    }
+                });
+                html += `<div class="flex-1"></div>`;
+                html += `<button onclick="setActiveTool('export')" class="w-14 h-14 mb-4 rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 ${state.activeTool === 'export' ? 'bg-emerald-600 text-white ring-2 ring-emerald-200 ring-offset-2' : 'bg-gradient-to-br from-slate-800 to-slate-900 text-white hover:from-slate-700 hover:to-slate-800'}"><i data-lucide="download" class="w-6 h-6"></i><span class="text-[0.65em] font-bold">${t(state.activeTool === 'export' ? 'export' : 'convert')}</span></button>`;
+            }
+            toolbar.innerHTML = html;
+        }
+
+        function renderCanvasArea() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            wrapper.style.transform = `translate(${state.pan.x}px, ${state.pan.y}px) scale(${state.zoom})`;
+            
+            const canvas = document.getElementById('main-canvas');
+            const video = document.getElementById('main-video');
+            const overlayLayer = document.getElementById('overlay-layer');
+            overlayLayer.innerHTML = '';
+            canvas.classList.remove('cursor-crosshair');
+
+            if (state.videoSrc) {
+                canvas.classList.add('hidden');
+                video.classList.remove('hidden');
+                video.src = state.videoSrc;
+            } else {
+                video.classList.add('hidden');
+                canvas.classList.remove('hidden');
+                canvas.classList.remove('bg-white');
+                
+                const ctx = canvas.getContext('2d');
+                
+                const draw = (img) => {
+                    if (canvas.width !== img.width || canvas.height !== img.height) {
+                        canvas.width = img.width; canvas.height = img.height;
+                        state.currentDims = { w: img.width, h: img.height };
+                    }
+                    ctx.clearRect(0,0, canvas.width, canvas.height);
+                    
+                    // 1. Draw with basic CSS filters (Fast)
+                    const { brightness, contrast, saturation, opacity, blur } = state.adjust;
+                    ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) opacity(${opacity}%) blur(${blur}px)`;
+                    
+                    ctx.drawImage(img, 0, 0);
+                    ctx.filter = 'none'; 
+
+                    // 2. Apply Posterization (Pixel manipulation - needs direct access)
+                    // If levels < 256, we must manipulate pixel data.
+                    // IMPORTANT: This makes preview real-time but might be slow on huge images.
+                    if (state.adjust.posterize < 256) {
+                        const imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
+                        const d = imageData.data;
+                        const levels = state.adjust.posterize;
+                        
+                        if (levels === 2) {
+                            // Binary Threshold (Black & White)
+                            for(let i=0; i<d.length; i+=4) {
+                                // Grayscale brightness
+                                const l = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+                                const v = l > 127 ? 255 : 0;
+                                d[i] = v; d[i+1] = v; d[i+2] = v;
+                            }
+                        } else {
+                            // Posterize
+                            const step = 255 / (levels - 1);
+                            for(let i=0; i<d.length; i+=4) {
+                                d[i] = Math.floor(d[i] / step) * step;
+                                d[i+1] = Math.floor(d[i+1] / step) * step;
+                                d[i+2] = Math.floor(d[i+2] / step) * step;
+                            }
+                        }
+                        ctx.putImageData(imageData, 0, 0);
+                    }
+                };
+
+                if (state.imgObj && state.imgObj.src === state.imageSrc) {
+                    draw(state.imgObj);
+                } else {
+                    const img = new Image();
+                    img.onload = () => {
+                        state.imgObj = img;
+                        draw(img);
+                    };
+                    img.src = state.imageSrc;
+                }
+
+                if (state.activeTool === 'crop' && state.crop.rect) renderCropOverlay(overlayLayer);
+                else if (state.activeTool === 'text') renderTextOverlay(overlayLayer);
+                else if (state.activeTool === 'overlay' && state.overlay.src) renderImageOverlay(overlayLayer);
+                else if (state.activeTool === 'bgremove') {
+                    canvas.classList.add('cursor-crosshair');
+                    canvas.onclick = handleCanvasClick;
+                } else {
+                    canvas.onclick = null;
+                }
+            }
+        }
+
+        // ... (Render Overlays) ...
+        function renderCropOverlay(container) {
+            const { x, y, w, h } = state.crop.rect;
+            const el = document.createElement('div');
+            el.className = 'absolute shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] cursor-move flex items-center justify-center group pointer-events-auto';
+            el.style.left = (x * 100) + '%'; el.style.top = (y * 100) + '%';
+            el.style.width = (w * 100) + '%'; el.style.height = (h * 100) + '%';
+            el.style.outline = '2px solid white';
+            el.innerHTML = `<div class="absolute inset-0 flex flex-col justify-between opacity-50 pointer-events-none"><div class="w-full h-px bg-white/50 mt-[33%]"></div><div class="w-full h-px bg-white/50 mb-[33%]"></div></div><div class="absolute inset-0 flex justify-between opacity-50 pointer-events-none"><div class="h-full w-px bg-white/50 ml-[33%]"></div><div class="h-full w-px bg-white/50 mr-[33%]"></div></div><div class="resize-handle top-0 left-0 cursor-nw-resize" onmousedown="startDrag(event, 'nw')"></div><div class="resize-handle top-0 right-0 cursor-ne-resize" onmousedown="startDrag(event, 'ne')"></div><div class="resize-handle bottom-0 left-0 cursor-sw-resize" onmousedown="startDrag(event, 'sw')"></div><div class="resize-handle bottom-0 right-0 cursor-se-resize" onmousedown="startDrag(event, 'se')"></div>`;
+            el.onmousedown = (e) => { if(e.target === el) startDrag(e, 'move'); };
+            container.appendChild(el);
+        }
+        function renderTextOverlay(container) {
+            const el = document.createElement('div');
+            const { x, y, text, color, size, font, stroke, strokeWidth, shadow, shadowBlur } = state.text;
+            const fs = (size / 1000) * state.currentDims.w;
+            let textShadow = `0px 2px ${shadowBlur}px ${shadow}`;
+            const strokeStyle = strokeWidth > 0 ? `-webkit-text-stroke: ${strokeWidth}px ${stroke};` : '';
+            el.style.cssText = `position:absolute;left:${x*100}%;top:${y*100}%;transform:translate(-50%,-50%);cursor:move;color:${color};font-family:${font};font-size:${fs}px;line-height:1;font-weight:bold;text-shadow:${textShadow};${strokeStyle} white-space:nowrap;border:1px dashed rgba(255,255,255,0.5);pointer-events:auto;`;
+            el.innerText = text;
+            el.onmousedown = (e) => startDragElement(e, 'text');
+            container.appendChild(el);
+        }
+        function renderImageOverlay(container) {
+            const el = document.createElement('div');
+            const { x, y, scale, src } = state.overlay;
+            const wPx = scale * state.currentDims.w;
+            el.style.cssText = `position:absolute;left:${x*100}%;top:${y*100}%;transform:translate(-50%,-50%);cursor:move;pointer-events:auto; width:${wPx}px;`;
+            el.className = 'group border border-dashed border-transparent hover:border-violet-500';
+            const img = document.createElement('img');
+            img.src = src; img.style.width = '100%'; img.style.pointerEvents = 'none'; img.className = 'shadow-xl';
+            el.appendChild(img);
+            el.onmousedown = (e) => startDragElement(e, 'overlay');
+            container.appendChild(el);
+        }
+
+        function renderSettingsPanel() {
+            const panel = document.getElementById('settings-panel');
+            const tool = state.activeTool;
+            if (!tool) { panel.classList.add('hidden'); return; }
+            panel.classList.remove('hidden');
+            
+            let html = `
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+                    <div class="flex items-center gap-2 text-slate-800 font-semibold"><i data-lucide="${getToolIcon(tool)}" class="w-4 h-4"></i> <span>${t(getToolLabel(tool))}</span></div>
+                    <button onclick="resetTools()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>`;
+
+            if (tool === 'adjust') {
+                html += `
+                    <div class="space-y-4">
+                        ${sliderInput('brightness', 'brightness', 0, 200, state.adjust.brightness, '%')}
+                        ${sliderInput('contrast', 'contrast', 0, 200, state.adjust.contrast, '%')}
+                        ${sliderInput('saturation', 'saturation', 0, 200, state.adjust.saturation, '%')}
+                        ${sliderInput('opacity', 'opacity', 0, 100, state.adjust.opacity, '%')}
+                        ${sliderInput('blur', 'blur', 0, 20, state.adjust.blur, 'px')}
+                        
+                        <div class="w-full h-px bg-slate-200 my-2"></div>
+                        <div>
+                            <label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('colors')}</label>
+                            <div class="flex gap-2 flex-wrap">
+                                ${levelBtn('2 (B&W)', 2)} ${levelBtn('4', 4)} ${levelBtn('8', 8)} ${levelBtn('16', 16)} ${levelBtn(t('trueColor'), 256)}
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="resetAdjustments()" class="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-lg text-[0.9em] font-semibold hover:bg-slate-200">${t('resetAdjust')}</button>
+                            <button onclick="applyAdjustments()" class="flex-1 py-2.5 bg-violet-600 text-white rounded-lg text-[0.9em] font-semibold hover:bg-violet-700">${t('done')}</button>
+                        </div>
+                    </div>
+                `;
+            } else if (tool === 'text') {
+                // ... (Text tool same as previous) ...
+                html += `
+                    <div class="space-y-6">
+                        <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('textInput')}</label><textarea rows="2" oninput="updateTextConfig('text', this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-[0.875em] focus:outline-none focus:ring-2 focus:ring-violet-500">${state.text.text}</textarea></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('font')}</label><select onchange="updateTextConfig('font', this.value)" class="w-full h-8 border rounded text-[0.8em]"><option value="sans-serif">Sans Serif</option><option value="serif">Serif</option><option value="monospace">Monospace</option><option value="cursive">Cursive</option><option value="fantasy">Fantasy</option></select></div>
+                            <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('textSize')}</label><input type="number" value="${state.text.size}" oninput="updateTextConfig('size', parseInt(this.value))" class="w-full px-3 py-1 bg-slate-50 border border-slate-200 rounded-md text-[0.875em]"></div>
+                        </div>
+                        <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('alignment')}</label><div class="flex gap-1 bg-slate-100 p-1 rounded">${alignBtn('text', 'left', 'align-left')} ${alignBtn('text', 'center', 'align-center')} ${alignBtn('text', 'right', 'align-right')} ${alignBtn('text', 'top', 'align-vertical-justify-start')} ${alignBtn('text', 'middle', 'align-vertical-justify-center')} ${alignBtn('text', 'bottom', 'align-vertical-justify-end')}</div></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('textColor')}</label><input type="color" value="${state.text.color}" oninput="updateTextConfig('color', this.value)" class="w-full h-8 p-0 border-0 rounded cursor-pointer"></div>
+                            <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('stroke')}</label><div class="flex gap-1"><input type="color" value="${state.text.stroke}" oninput="updateTextConfig('stroke', this.value)" class="w-8 h-8 p-0 border-0 rounded cursor-pointer"><input type="number" value="${state.text.strokeWidth}" min="0" max="10" oninput="updateTextConfig('strokeWidth', parseInt(this.value))" class="w-full px-2 text-[0.8em] border rounded"></div></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('shadow')}</label><input type="color" value="${state.text.shadow}" oninput="updateTextConfig('shadow', this.value)" class="w-full h-8 p-0 border-0 rounded cursor-pointer"></div>
+                            <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('shadowBlur')}</label><input type="number" value="${state.text.shadowBlur}" min="0" max="20" oninput="updateTextConfig('shadowBlur', parseInt(this.value))" class="w-full px-2 py-1 text-[0.8em] border rounded"></div>
+                        </div>
+                        <button onclick="applyText()" class="w-full py-2.5 bg-violet-600 text-white rounded-lg text-[0.9em] font-semibold hover:bg-violet-700">${t('applyText')}</button>
+                    </div>`;
+            } else if (tool === 'overlay') {
+                html += `<div class="space-y-6">`;
+                if (!state.overlay.src) {
+                    html += `<div onclick="document.getElementById('overlay-upload').click()" class="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 hover:border-violet-400 transition-colors cursor-pointer"><i data-lucide="upload" class="w-6 h-6 text-slate-400 mb-2"></i><span class="text-[0.875em] font-medium text-slate-600">${t('uploadOverlay')}</span></div>`;
+                } else {
+                    html += `<div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('overlaySize')}</label><input type="range" min="0.1" max="1.5" step="0.05" value="${state.overlay.scale}" oninput="updateOverlayScale(this.value)" class="w-full"></div>
+                        <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('alignment')}</label><div class="flex gap-1 bg-slate-100 p-1 rounded">${alignBtn('overlay', 'left', 'align-left')} ${alignBtn('overlay', 'center', 'align-center')} ${alignBtn('overlay', 'right', 'align-right')} ${alignBtn('overlay', 'top', 'align-vertical-justify-start')} ${alignBtn('overlay', 'middle', 'align-vertical-justify-center')} ${alignBtn('overlay', 'bottom', 'align-vertical-justify-end')}</div></div>
+                        <div class="flex gap-2"><button onclick="state.overlay.src = null; renderCanvasArea(); renderSettingsPanel()" class="flex-1 py-2 border border-slate-300 rounded text-slate-600 hover:bg-slate-50 text-[0.875em]">${t('changeImage')}</button></div>
+                        <button onclick="applyOverlay()" class="w-full py-2.5 bg-violet-600 text-white rounded-lg text-[0.9em] font-semibold hover:bg-violet-700">${t('applyOverlay')}</button>`;
+                }
+                html += `</div>`;
+            } else if (tool === 'crop') {
+                html += `
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-3 gap-2">
+                            ${aspectBtn('Free', 'free', !state.crop.lockAspect)}
+                            ${aspectBtn('Original', 'original', state.crop.lockAspect)}
+                            ${ratioBtn('1:1', 1, 1)} ${ratioBtn('16:9', 16, 9)} ${ratioBtn('9:16', 9, 16)} ${ratioBtn('4:3', 4, 3)}
+                            <button onclick="setFixedCrop(1920, 600)" class="py-2 px-1 rounded-md text-[0.75em] font-medium border border-slate-200 text-slate-600 hover:border-slate-300">1920x600</button>
+                            <button onclick="setFixedCrop(800, 600)" class="py-2 px-1 rounded-md text-[0.75em] font-medium border border-slate-200 text-slate-600 hover:border-slate-300">800x600</button>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-2 text-[0.875em] text-slate-600"><input type="checkbox" ${state.crop.lockAspect ? 'checked' : ''} onchange="toggleLockAspect(this.checked)" class="rounded text-violet-600">${t('lockAspect')}</label>
+                            ${state.crop.lockAspect ? `<button onclick="handleFitMax()" class="text-[0.75em] bg-violet-50 text-violet-700 px-2 py-1 rounded hover:bg-violet-100 flex items-center gap-1"><i data-lucide="maximize" class="w-3 h-3"></i> ${t('fitMax')}</button>` : ''}
+                        </div>
+                        <button onclick="applyCrop()" class="w-full py-2.5 bg-violet-600 text-white rounded-lg text-[0.9em] font-semibold hover:bg-violet-700 flex items-center justify-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> ${t('applyCrop')}</button>
+                    </div>`;
+            } else if (tool === 'resize') {
+                html += `
+                    <div class="space-y-4">
+                        <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('percentage')}</label>
+                            <div class="flex items-center gap-3"><input type="range" min="1" max="200" value="${state.resize.scale}" oninput="handleResizeChange('scale', this.value)" class="w-full"><span class="text-[0.875em] font-medium w-12 text-right">${state.resize.scale}%</span></div></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('width')} (px)</label><input type="number" value="${state.resize.width}" onchange="handleResizeChange('width', this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-[0.875em]"></div>
+                            <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('height')} (px)</label><input type="number" value="${state.resize.height}" onchange="handleResizeChange('height', this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-[0.875em]"></div>
+                        </div>
+                        <label class="flex items-center gap-2 text-[0.875em] text-slate-600"><input type="checkbox" ${state.resize.maintainAspect ? 'checked' : ''} onchange="toggleResizeAspect(this.checked)" class="rounded text-violet-600"> ${t('lockAspect')}</label>
+                        <div class="bg-slate-50 p-3 rounded border border-slate-100 flex justify-between items-center"><span class="text-[0.75em] font-semibold text-slate-500 uppercase">${t('estSize')}</span><span class="text-[0.875em] font-bold text-slate-700" id="resize-est-size">...</span></div>
+                        <button onclick="applyResize()" class="w-full py-2.5 bg-violet-600 text-white rounded-lg text-[0.9em] font-semibold hover:bg-violet-700">${t('applyResize')}</button>
+                    </div>`;
+            } else if (tool === 'bgremove') {
+                html += `
+                    <div class="space-y-6">
+                        <div class="p-4 bg-violet-50 rounded-lg border border-violet-100"><p class="text-[0.875em] text-violet-800 font-medium mb-1">${t('magicWand')}</p><p class="text-[0.75em] text-violet-600">${t('magicWandDesc')}</p></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="handleAutoRemove()" class="py-2 bg-white border border-slate-200 rounded-md text-[0.8em] font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2"><i data-lucide="wand-2" class="w-3 h-3"></i> ${t('autoRemove')}</button>
+                            <button onclick="handleOutline()" class="py-2 bg-white border border-slate-200 rounded-md text-[0.8em] font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2"><i data-lucide="scan-line" class="w-3 h-3"></i> ${t('outlineOnly')}</button>
+                        </div>
+                        <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('tolerance')}</label><div class="flex items-center gap-3"><input type="range" min="1" max="100" value="${state.bgRemove.tolerance}" oninput="state.bgRemove.tolerance = parseInt(this.value); this.nextElementSibling.innerText = this.value" class="w-full"><span class="text-[0.875em] font-medium w-8 text-right">${state.bgRemove.tolerance}</span></div></div>
+                        <button onclick="applyBgRemoval()" class="w-full py-2.5 bg-violet-600 text-white rounded-lg text-[0.9em] font-semibold hover:bg-violet-700">${t('done')}</button>
+                    </div>`;
+            } else if (tool === 'export') {
+                html += `
+                    <div class="space-y-6">
+                        <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('fileName')}</label><input type="text" value="${state.export.name}" oninput="state.export.name = this.value" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-[0.875em]"></div>
+                        <div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('format')}</label>
+                            <div class="grid grid-cols-2 gap-2">${formatBtn('image/jpeg', 'JPG')} ${formatBtn('image/png', 'PNG')} ${formatBtn('image/webp', 'WEBP')} ${formatBtn('image/svg+xml', 'SVG')}</div></div>
+                        ${state.export.format !== 'image/png' && state.export.format !== 'image/svg+xml' ? `<div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t('quality')}</label><div class="flex items-center gap-3"><input type="range" min="0" max="1" step="0.1" value="${state.export.quality}" oninput="state.export.quality = parseFloat(this.value); this.nextElementSibling.innerText = Math.round(this.value * 100) + '%'; calculateFileSize('export')" class="w-full"><span class="text-[0.875em] font-medium w-8 text-right">${Math.round(state.export.quality * 100)}%</span></div></div>` : ''}
+                        <div class="bg-slate-50 p-3 rounded border border-slate-100 flex justify-between items-center"><span class="text-[0.75em] font-semibold text-slate-500 uppercase">${t('estSize')}</span><span class="text-[0.875em] font-bold text-slate-700" id="export-est-size">...</span></div>
+                        <button onclick="handleDownload()" class="w-full py-2.5 bg-violet-600 text-white rounded-lg text-[0.9em] font-semibold hover:bg-violet-700">${t('downloadImage')}</button>
+                    </div>`;
+            }
+            
+            panel.innerHTML = html;
+            lucide.createIcons();
+            if (tool === 'resize') calculateFileSize('resize');
+            if (tool === 'export') calculateFileSize('export');
+        }
+
+        /** Helper functions */
+        function aspectBtn(l,m,a){ const c = m==='free'?`setCropRatio(null)`:(m==='original'?`setCropRatio('original')`:''); return `<button onclick="${c}" class="py-2 px-3 rounded-md text-[0.75em] font-medium border transition-colors ${a?'border-violet-200 bg-violet-50 text-violet-700':'border-slate-200 text-slate-600 hover:border-slate-300'}">${t(l.toLowerCase())}</button>`; }
+        function ratioBtn(l,w,h){ return `<button onclick="setCropRatio(${w},${h})" class="py-2 px-3 rounded-md text-[0.75em] font-medium border transition-colors border-slate-200 text-slate-600 hover:border-slate-300">${l}</button>`; }
+        function formatBtn(m,l){ const a=state.export.format===m; return `<button onclick="state.export.format='${m}';renderSettingsPanel();" class="px-3 py-2 text-[0.75em] font-medium rounded-md border ${a?'bg-violet-600 text-white border-violet-600':'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}">${l}</button>`; }
+        function getToolIcon(id){ const m={crop:'crop',resize:'maximize-2',bgremove:'eraser',text:'type',overlay:'image',gif:'refresh-cw',export:'download',invert:'contrast',adjust:'sliders'}; return m[id]; }
+        function getToolLabel(id){ if(id==='export')return 'exportImage'; if(id==='bgremove')return 'removeBackground'; if(id==='crop')return 'cropImage'; if(id==='resize')return 'resizeImage'; if(id==='text')return 'addText'; if(id==='overlay')return 'addOverlay'; if(id==='gif')return 'videoToGif'; if(id==='invert')return 'invert'; if(id==='adjust')return 'adjustImage'; return id; }
+        function sliderInput(label, field, min, max, val, unit) { return `<div><label class="block text-[0.75em] font-semibold text-slate-500 uppercase mb-1.5">${t(label)}</label><div class="flex items-center gap-3"><input type="range" min="${min}" max="${max}" value="${val}" oninput="state.adjust.${field} = parseInt(this.value); this.nextElementSibling.innerText = this.value + '${unit}'; renderCanvasArea()" class="w-full"><span class="text-[0.875em] font-medium w-8 text-right">${val}${unit}</span></div></div>`; }
+        function alignBtn(mode, type, icon) { return `<button onclick="alignElement('${mode}', '${type}')" class="p-1 text-slate-500 hover:text-violet-600" title="${type}"><i data-lucide="${icon}" class="w-4 h-4"></i></button>`; }
+        function levelBtn(l, val) { 
+            const a = state.adjust.posterize === val;
+            return `<button onclick="state.adjust.posterize=${val}; renderCanvasArea(); renderSettingsPanel();" class="flex-1 py-1 px-2 border rounded text-[0.75em] transition-colors ${a ? 'bg-violet-100 border-violet-300 text-violet-700 font-bold' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}">${l}</button>`; 
+        }
+
+        /** INTERACTION LOGIC */
+        function toggleFontSize(){ const m={small:'normal',normal:'large',large:'small'}; state.fontSize=m[state.fontSize]; document.body.className=document.body.className.replace(/text-size-\w+/,`text-size-${state.fontSize}`); updateUI(); }
+        function toggleLang(){ state.lang=state.lang==='en'?'zh':'en'; updateUI(); }
+        function adjustZoom(d){ state.zoom=Math.min(Math.max(0.05,state.zoom+d),5); renderCanvasArea(); renderHeader(); }
+        function handleScrollZoom(e){ if(!state.imageSrc&&!state.videoSrc)return; e.preventDefault(); adjustZoom(e.deltaY*-0.001); }
+        function fitImageToScreen(){ const c=document.getElementById('canvas-container'); const p=80; const aw=c.clientWidth-p; const ah=c.clientHeight-p; const sw=aw/state.currentDims.w; const sh=ah/state.currentDims.h; state.zoom=Math.min(sw,sh); renderCanvasArea(); renderHeader(); }
+
+        // Panning Logic
+        let panInfo = null;
+        function startPan(e) {
+            const isOverlay = e.target.closest('.pointer-events-auto') || e.target.closest('.resize-handle');
+            if (isOverlay && !e.altKey) return; 
+            e.preventDefault();
+            panInfo = { startX: e.clientX, startY: e.clientY, initialPan: { ...state.pan } };
+            document.getElementById('canvas-container').classList.add('cursor-grabbing');
+            document.addEventListener('mousemove', onPanMove);
+            document.addEventListener('mouseup', onPanEnd);
+        }
+        function onPanMove(e) {
+            if (!panInfo) return;
+            const dx = e.clientX - panInfo.startX;
+            const dy = e.clientY - panInfo.startY;
+            state.pan = { x: panInfo.initialPan.x + dx, y: panInfo.initialPan.y + dy };
+            renderCanvasArea();
+        }
+        function onPanEnd() {
+            panInfo = null;
+            document.getElementById('canvas-container').classList.remove('cursor-grabbing');
+            document.removeEventListener('mousemove', onPanMove);
+            document.removeEventListener('mouseup', onPanEnd);
+        }
+
+        // New Logic
+        function updateTextConfig(k,v){state.text[k]=v;renderCanvasArea();}
+        function alignElement(mode, type) {
+            const obj = mode === 'text' ? state.text : state.overlay;
+            if (type === 'left') obj.x = 0; 
+            if (type === 'center') obj.x = 0.5;
+            if (type === 'right') obj.x = 1;
+            if (type === 'top') obj.y = 0;
+            if (type === 'middle') obj.y = 0.5;
+            if (type === 'bottom') obj.y = 1;
+            renderCanvasArea();
+        }
+        
+        function applyAdjustments() {
+            const img = state.imgObj; // Use cached image
+            if (!img) return;
+            
+            const temp = document.createElement('canvas');
+            temp.width = img.width; temp.height = img.height;
+            const ctx = temp.getContext('2d');
+            
+            const { brightness, contrast, saturation, opacity, blur } = state.adjust;
+            ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) opacity(${opacity}%) blur(${blur}px)`;
+            
+            ctx.drawImage(img, 0, 0);
+            
+            // Handle Posterize if reduced (Burn in)
+            if (state.adjust.posterize < 256) {
+                const id = ctx.getImageData(0,0,temp.width,temp.height);
+                const d = id.data;
+                const levels = state.adjust.posterize;
+                
+                if (levels === 2) {
+                    for(let i=0; i<d.length; i+=4) {
+                        const l = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+                        const v = l > 127 ? 255 : 0;
+                        d[i] = v; d[i+1] = v; d[i+2] = v;
+                    }
+                } else {
+                    const step = 255 / (levels - 1);
+                    for(let i=0; i<d.length; i+=4) {
+                        d[i] = Math.floor(d[i] / step) * step;
+                        d[i+1] = Math.floor(d[i+1] / step) * step;
+                        d[i+2] = Math.floor(d[i+2] / step) * step;
+                    }
+                }
+                ctx.putImageData(id, 0, 0);
             }
 
-            // 3. 綁定點擊事件
-            p.onclick = function() {
-                if (this.classList.contains('keep-path')) {
-                    // 變成移除狀態
-                    this.classList.remove('keep-path');
-                    this.classList.add('remove-path');
-                } else {
-                    // 變成保留狀態
-                    this.classList.remove('remove-path');
-                    this.classList.add('keep-path');
-                    // 恢復顏色 (若是黑白模式確保是黑)
-                    if (mode === 'bw') this.setAttribute('fill', '#000000');
-                }
-                updatePathCount();
-            };
-        });
+            addToHistory(temp.toDataURL());
+            resetAdjustments(); // Reset sliders to default after applying
+            resetTools(); // Close tool
+            showNotification(t('filterApplied'));
+        }
 
-        // 顯示到畫面上
-        svgWrap.innerHTML = '';
-        // 為了讓 CSS class 生效，我們直接插入 DOM，而不是 clone
-        // 注意：這樣修改會直接影響 currentSvgEl，這正是我們想要的
-        svgWrap.appendChild(currentSvgEl);
+        // ... Existing Logic ...
+        function setCropRatio(w,h){ if(w===null){state.crop.lockAspect=false;state.crop.rect={x:0.1,y:0.1,w:0.8,h:0.8};}else if(w==='original'){state.crop.lockAspect=true;state.crop.rect={x:0.1,y:0.1,w:0.8,h:0.8};}else{const ca=state.currentDims.w/state.currentDims.h;const ta=w/h;let nw=0.6;let nh=nw*(ca/ta);if(nh>0.8){nh=0.6;nw=nh*(ta/ca);}state.crop.rect={x:(1-nw)/2,y:(1-nh)/2,w:nw,h:nh};state.crop.lockAspect=true;}renderCanvasArea();renderSettingsPanel(); }
+        function setFixedCrop(w,h){ const a=w/h;let pw=w/state.currentDims.w;let ph=h/state.currentDims.h;if(pw>1||ph>1){const ia=state.currentDims.w/state.currentDims.h;if(a>ia){pw=1.0;ph=(state.currentDims.w/a)/state.currentDims.h;}else{ph=1.0;pw=(state.currentDims.h*a)/state.currentDims.w;}}state.crop.rect={x:(1-pw)/2,y:(1-ph)/2,w:pw,h:ph};state.crop.lockAspect=true;renderCanvasArea();renderSettingsPanel(); }
+        function toggleLockAspect(c){state.crop.lockAspect=c;renderSettingsPanel();}
+        function handleFitMax(){if(!state.crop.rect)return;const pw=state.crop.rect.w*state.currentDims.w;const ph=state.crop.rect.h*state.currentDims.h;const a=pw/ph;const ia=state.currentDims.w/state.currentDims.h;let nw,nh;if(a>ia){nw=1.0;const hp=state.currentDims.w/a;nh=hp/state.currentDims.h;}else{nh=1.0;const wp=state.currentDims.h*a;nw=wp/state.currentDims.w;}state.crop.rect={x:(1-nw)/2,y:(1-nh)/2,w:nw,h:nh};renderCanvasArea();}
+        function applyCrop(){const c=document.getElementById('main-canvas');const{x,y,w,h}=state.crop.rect;const sx=x*c.width;const sy=y*c.height;const sw=w*c.width;const sh=h*c.height;const nc=document.createElement('canvas');nc.width=sw;nc.height=sh;nc.getContext('2d').drawImage(c,sx,sy,sw,sh,0,0,sw,sh);addToHistory(nc.toDataURL());resetTools();showNotification(t('imageCropped'));}
+
+        // Dragging Logic
+        let dragInfo=null;
+        function startDrag(e,t){e.preventDefault();e.stopPropagation();const{x,y,w,h}=state.crop.rect;const c=document.getElementById('main-canvas');let a=1;if(state.crop.rect.h>0){const wp=w*c.width;const hp=h*c.height;a=wp/hp;}dragInfo={type:t,startX:e.clientX,startY:e.clientY,startRect:{...state.crop.rect},aspect:a,mode:'crop'};document.addEventListener('mousemove',onDragMove);document.addEventListener('mouseup',onDragEnd);}
+        function startDragElement(e,m){e.preventDefault();e.stopPropagation();const sx=m==='text'?state.text.x:state.overlay.x;const sy=m==='text'?state.text.y:state.overlay.y;dragInfo={type:'move',startX:e.clientX,startY:e.clientY,initialPos:{x:sx,y:sy},mode:m};document.addEventListener('mousemove',onDragMove);document.addEventListener('mouseup',onDragEnd);}
+        function onDragMove(e){if(!dragInfo)return;const c=document.getElementById('main-canvas');const r=c.getBoundingClientRect();if(dragInfo.mode==='crop'){const sx=c.width/r.width;const sy=c.height/r.height;const dx=(e.clientX-dragInfo.startX)*sx;const dy=(e.clientY-dragInfo.startY)*sy;const dpx=dx/c.width;const dpy=dy/c.height;let nr={...dragInfo.startRect};const t=dragInfo.type;if(t==='move'){nr.x=Math.max(0,Math.min(1-nr.w,nr.x+dpx));nr.y=Math.max(0,Math.min(1-nr.h,nr.y+dpy));}else{if(t.includes('w')){const md=nr.x;const sd=Math.max(-md,Math.min(nr.w-0.05,dpx));nr.x+=sd;nr.w-=sd;}else if(t.includes('e')){const md=1-(nr.x+nr.w);const sd=Math.min(md,Math.max(-(nr.w-0.05),dpx));nr.w+=sd;}if(t.includes('n')){const md=nr.y;const sd=Math.max(-md,Math.min(nr.h-0.05,dpy));nr.y+=sd;nr.h-=sd;}else if(t.includes('s')){const md=1-(nr.y+nr.h);const sd=Math.min(md,Math.max(-(nr.h-0.05),dpy));nr.h+=sd;}if(state.crop.lockAspect){const wp=nr.w*c.width;const hp=wp/dragInfo.aspect;const nh=hp/c.height;if(nr.y+nh>1&&t.includes('s')){const mh=1-nr.y;const mw=(mh*c.height*dragInfo.aspect)/c.width;nr.h=mh;nr.w=mw;}else nr.h=nh;}}state.crop.rect=nr;renderCanvasArea();}else{const dx=(e.clientX-dragInfo.startX)/r.width;const dy=(e.clientY-dragInfo.startY)/r.height;const nx=dragInfo.initialPos.x+dx;const ny=dragInfo.initialPos.y+dy;if(dragInfo.mode==='text'){state.text.x=nx;state.text.y=ny;}else{state.overlay.x=nx;state.overlay.y=ny;}renderCanvasArea();}}
+        function onDragEnd(){dragInfo=null;document.removeEventListener('mousemove',onDragMove);document.removeEventListener('mouseup',onDragEnd);}
+
+        function handleResizeChange(f,v){const a=state.currentDims.w/state.currentDims.h;if(f==='scale'){state.resize.scale=parseInt(v);state.resize.width=Math.round(state.currentDims.w*(v/100));state.resize.height=Math.round(state.currentDims.h*(v/100));}else if(f==='width'){state.resize.width=parseInt(v);if(state.resize.maintainAspect){state.resize.height=Math.round(v/a);state.resize.scale=Math.round((v/state.currentDims.w)*100);}}else if(f==='height'){state.resize.height=parseInt(v);if(state.resize.maintainAspect){state.resize.width=Math.round(v*a);state.resize.scale=Math.round((state.resize.width/state.currentDims.w)*100);}}renderSettingsPanel();}
+        function toggleResizeAspect(c){state.resize.maintainAspect=c;renderSettingsPanel();}
+        function applyResize(){const c=document.createElement('canvas');c.width=state.resize.width;c.height=state.resize.height;const x=c.getContext('2d');const i=new Image();i.onload=()=>{x.drawImage(i,0,0,c.width,c.height);addToHistory(c.toDataURL());resetTools();showNotification(t('imageResized'));};i.src=state.imageSrc;}
+
+        function handleCanvasClick(e){if(state.activeTool!=='bgremove')return;const c=document.getElementById('main-canvas');const r=c.getBoundingClientRect();const sx=c.width/r.width;const sy=c.height/r.height;const x=(e.clientX-r.left)*sx;const y=(e.clientY-r.top)*sy;removeColorAt(x,y);}
+        function removeColorAt(x,y){const c=document.getElementById('main-canvas');const x2=c.getContext('2d');const d=x2.getImageData(0,0,c.width,c.height);const da=d.data;const i=(Math.floor(y)*c.width+Math.floor(x))*4;const[tr,tg,tb]=[da[i],da[i+1],da[i+2]];const tol=state.bgRemove.tolerance;for(let j=0;j<da.length;j+=4){const df=Math.sqrt(((da[j]-tr)**2)+((da[j+1]-tg)**2)+((da[j+2]-tb)**2));if(df<tol*3)da[j+3]=0;}x2.putImageData(d,0,0);}
+        function handleAutoRemove(){const c=document.getElementById('main-canvas');const w=c.width;const h=c.height;[[0,0],[w-1,0],[0,h-1],[w-1,h-1]].forEach(p=>removeColorAt(p[0],p[1]));applyBgRemoval();}
+        function handleOutline(){const c=document.getElementById('main-canvas');const x=c.getContext('2d');const w=c.width;const h=c.height;const id=x.getImageData(0,0,w,h);const d=id.data;const o=x.createImageData(w,h);const od=o.data;const gp=(x,y)=>{if(x<0||y<0||x>=w||y>=h)return 0;const i=(y*w+x)*4;return(d[i]+d[i+1]+d[i+2])/3;};for(let y=0;y<h;y++){for(let x=0;x<w;x++){const gx=-gp(x-1,y-1)+gp(x+1,y-1)-2*gp(x-1,y)+2*gp(x+1,y)-gp(x-1,y+1)+gp(x+1,y+1);const gy=-gp(x-1,y-1)-2*gp(x,y-1)-gp(x+1,y-1)+gp(x-1,y+1)+2*gp(x,y+1)+gp(x+1,y+1);const m=255-Math.sqrt(gx*gx+gy*gy);const i=(y*w+x)*4;od[i]=m;od[i+1]=m;od[i+2]=m;od[i+3]=255;}}x.putImageData(o,0,0);applyBgRemoval();}
+        function applyBgRemoval(){addToHistory(document.getElementById('main-canvas').toDataURL());resetTools();showNotification(t('bgRemoved'));}
         
-        // 調整樣式以適應視窗
-        currentSvgEl.style.width = '100%';
-        currentSvgEl.style.height = '100%';
+        // Invert Function
+        function handleInvert() {
+            const canvas = document.getElementById('main-canvas');
+            const ctx = canvas.getContext('2d');
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = 255 - data[i];     // R
+                data[i + 1] = 255 - data[i + 1]; // G
+                data[i + 2] = 255 - data[i + 2]; // B
+            }
+            ctx.putImageData(imgData, 0, 0);
+            addToHistory(canvas.toDataURL());
+            showNotification(t('filterApplied'));
+        }
 
-        updatePathCount();
-        
-        loading.style.display = 'none';
-        result.style.display = 'flex';
-    }
+        function updateTextConfig(k,v){state.text[k]=v;renderCanvasArea();}
+        function applyText(){const c=document.getElementById('main-canvas');const x=c.getContext('2d');const{text,color,size,x:tx,y:ty,font,stroke,strokeWidth,shadow,shadowBlur}=state.text;x.fillStyle=color;x.font=`bold ${(size/1000)*c.width}px ${font}`;x.textAlign='center';x.textBaseline='middle';
+        if(strokeWidth>0){x.strokeStyle=stroke;x.lineWidth=strokeWidth;x.strokeText(text,tx*c.width,ty*c.height);}
+        if(shadowBlur>0){x.shadowColor=shadow;x.shadowBlur=shadowBlur;x.shadowOffsetY=2;}
+        x.fillText(text,tx*c.width,ty*c.height);x.shadowColor='transparent';x.shadowBlur=0;
+        addToHistory(c.toDataURL());resetTools();showNotification(t('textAdded'));}
+        function handleOverlayFile(e){const f=e.target.files[0];if(f){const r=new FileReader();r.onload=(v)=>{state.overlay.src=v.target.result;renderCanvasArea();renderSettingsPanel();};r.readAsDataURL(f);}}
+        function updateOverlayScale(v){state.overlay.scale=parseFloat(v);renderCanvasArea();}
+        function applyOverlay(){const c=document.getElementById('main-canvas');const x=c.getContext('2d');const i=new Image();i.onload=()=>{const a=i.width/i.height;const tw=state.overlay.scale*c.width;const th=tw/a;const tx=(state.overlay.x*c.width)-(tw/2);const ty=(state.overlay.y*c.height)-(th/2);x.drawImage(i,tx,ty,tw,th);addToHistory(c.toDataURL());resetTools();showNotification(t('overlayAdded'));};i.src=state.overlay.src;}
 
-    function updatePathCount() {
-        const count = svgWrap.querySelectorAll('path.keep-path').length;
-        pathCountSpan.innerText = count;
-    }
+        function handleCreateGif(){if(!gifshot)return;state.gif.generating=true;renderSettingsPanel();const v=document.getElementById('main-video');gifshot.createGIF({video:[state.videoSrc],gifWidth:300,gifHeight:300*(v.videoHeight/v.videoWidth),interval:0.1,numFrames:state.gif.duration*10},(o)=>{state.gif.generating=false;renderSettingsPanel();if(!o.error){const a=document.createElement('a');a.href=o.image;a.download=`${state.export.name}.gif`;a.click();showNotification(t('imageDownloaded'));}});}
+        function captureVideoFrame(){const v=document.getElementById('main-video');const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);const d=c.toDataURL();state.videoSrc=null;state.imageSrc=d;state.history=[d];state.historyIndex=0;state.currentDims={w:c.width,h:c.height};state.resize.width=c.width;state.resize.height=c.height;updateUI();}
 
-    // 下載按鈕邏輯
-    dlBtn.addEventListener('click', function(e) {
-        if (!currentSvgEl) return;
+        function calculateFileSize(m){const c=document.getElementById('main-canvas');if(!c)return;const t=m==='resize'?'resize-est-size':'export-est-size';const e=document.getElementById(t);if(!e)return;e.innerText='...';setTimeout(()=>{let tc=c;if(m==='resize'){tc=document.createElement('canvas');tc.width=state.resize.width;tc.height=state.resize.height;tc.getContext('2d').drawImage(c,0,0,tc.width,tc.height);}const f=state.export.format;if(f==='image/svg+xml'){const d=tc.toDataURL('image/png');e.innerText=formatBytes(d.length);}else{tc.toBlob(b=>{e.innerText=formatBytes(b?b.size:0);},f,state.export.quality);}},200);}
+        function handleDownload(){const c=document.getElementById('main-canvas');const l=document.createElement('a');let x=state.export.format.split('/')[1];if(x.includes('svg'))x='svg';l.download=`${state.export.name}.${x}`;if(state.export.format==='image/jpeg'){const t=document.createElement('canvas');t.width=c.width;t.height=c.height;const k=t.getContext('2d');k.fillStyle='#FFF';k.fillRect(0,0,t.width,t.height);k.drawImage(c,0,0);l.href=t.toDataURL('image/jpeg',state.export.quality);}else if(state.export.format==='image/svg+xml'){const d=c.toDataURL('image/png');const s=`<svg xmlns="http://www.w3.org/2000/svg" width="${c.width}" height="${c.height}"><image href="${d}" width="${c.width}" height="${c.height}"/></svg>`;l.href=URL.createObjectURL(new Blob([s],{type:'image/svg+xml'}));}else{l.href=c.toDataURL(state.export.format,state.export.quality);}l.click();showNotification(t('imageDownloaded'));}
 
-        // 1. 複製目前的 SVG 狀態
-        const cloneSvg = currentSvgEl.cloneNode(true);
-        
-        // 2. 移除所有標記為 'remove-path' 的元素
-        const toRemove = cloneSvg.querySelectorAll('.remove-path');
-        toRemove.forEach(el => el.remove());
+        function showNotification(m){const e=document.getElementById('notification');e.innerText=m;e.classList.remove('hidden','opacity-0');setTimeout(()=>{e.classList.add('opacity-0');setTimeout(()=>e.classList.add('hidden'),300);},2000);}
+        function formatBytes(b,d=2){if(!+b)return'0 Bytes';const k=1024;const i=Math.floor(Math.log(b)/Math.log(k));return`${parseFloat((b/Math.pow(k,i)).toFixed(d))} ${['Bytes','KB','MB','GB'][i]}`;}
 
-        // 3. 清理剩下的 class 屬性 (Bambu Studio 不需要這些)
-        const toClean = cloneSvg.querySelectorAll('.keep-path');
-        toClean.forEach(el => el.removeAttribute('class'));
-        cloneSvg.removeAttribute('style'); // 移除 width=100%
-
-        // 4. 序列化並下載
-        const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(cloneSvg);
-        
-        const blob = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
-        const url = URL.createObjectURL(blob);
-        
-        this.href = url;
-        this.download = originalFilename + "_edited.svg";
-    });
-</script>
-
+    </script>
 </body>
 </html>
